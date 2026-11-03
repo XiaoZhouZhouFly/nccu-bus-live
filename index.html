@@ -6,7 +6,6 @@
     <title>政大校園公車即時動態</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 已經幫你開啟手機版除錯控制台 (Eruda) -->
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script>
 
@@ -229,31 +228,27 @@
             const syncIcon = document.getElementById('sync-icon');
             syncIcon.classList.add('loading-spin');
 
-            // 🌟 使用你專屬的 Google Apps Script 代理伺服器 🌟
-            const GAS_URL = "https://script.google.com/macros/s/AKfycbxLXAGQvNHP_oEopEVTXQq1XkuFzPiy0D7x09fJOptHvBXZmprR6Yus6_B10F6IGTMslQ/exec";
+            // 🚀 關鍵：在這裡填入你剛剛建立的 Cloudflare Worker 專屬網址！
+            // 記得最後面不要有斜線
+            const CF_WORKER_URL = "https://nccu-bus.qoo3308.workers.dev/";
 
             for (let routeId of [1, 2, 3]) {
                 const config = routeConfig[routeId];
-                // 加上時間戳，確保每次都抓取最新狀態
-                const targetUrl = `http://nccu.5284.com.tw/MQS/route.jsp?rid=${config.rid}&t=${Date.now()}`;
                 
-                // 讓私人 Google 代理去抓資料
-                const proxyUrl = `${GAS_URL}?url=${encodeURIComponent(targetUrl)}`;
+                // ⚠️ 修正：不在 5284 網址加時間戳，給伺服器最乾淨的請求
+                const targetUrl = `http://nccu.5284.com.tw/MQS/route.jsp?rid=${config.rid}`;
+                
+                // 把時間戳掛在 Cloudflare 代理後面，強迫瀏覽器抓最新狀態
+                const proxyUrl = `${CF_WORKER_URL}?url=${encodeURIComponent(targetUrl)}&t=${Date.now()}`;
                 
                 try {
                     const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error("Google 代理請求失敗");
+                    if (!response.ok) throw new Error(`CF 代理請求失敗，代碼: ${response.status}`);
                     
                     const htmlText = await response.text(); 
-                    
-                    if (htmlText.startsWith("Error:")) {
-                        throw new Error(htmlText);
-                    }
-
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(htmlText, 'text/html');
                     
-                    // 清除舊公車
                     document.getElementById(`axis-${routeId}-out`).querySelectorAll('.bus-marker').forEach(b => b.remove());
                     document.getElementById(`axis-${routeId}-in`).querySelectorAll('.bus-marker').forEach(b => b.remove());
 
@@ -266,7 +261,6 @@
                                 const statusEl = document.getElementById(`status-${stop.id}`);
                                 statusEl.innerText = statusText;
                                 
-                                // 動態變更文字顏色
                                 if (statusText.includes('將到站')) {
                                     statusEl.className = "text-[10px] mt-0.5 font-bold text-red-500 transition-colors duration-300";
                                 } else if (statusText.includes('分')) {
@@ -275,7 +269,6 @@
                                     statusEl.className = "text-[10px] mt-0.5 font-bold text-gray-400 transition-colors duration-300";
                                 }
 
-                                // 顯示車牌號碼
                                 const plateEl = document.getElementById(`plate-${stop.id}`);
                                 if (plateText) {
                                     plateEl.innerText = plateText;
@@ -284,7 +277,6 @@
                                     plateEl.classList.add('hidden');
                                 }
 
-                                // 決定是否畫出公車圖示
                                 if (statusText.includes('將到站') || (statusText.includes('未發車') && plateText !== "")) {
                                     const percent = (index / (dirConfig.stops.length - 1)) * 100;
                                     const bus = document.createElement('div');
@@ -304,14 +296,11 @@
                     console.error(`路線 ${routeId} 同步失敗:`, error);
                 }
             }
-            // 關閉讀取動畫
             syncIcon.classList.remove('loading-spin');
         }
 
-        // 啟動 UI 並執行第一次爬蟲
         initUI();
         fetchAllRoutesData();
-        // 每 15 秒更新一次
         setInterval(fetchAllRoutesData, 15000);
     </script>
 </body>
