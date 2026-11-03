@@ -3,61 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>政大校園公車環山動態</title>
+    <title>政大校園公車即時動態</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 手機版除錯控制台 (若不需要可加上註解隱藏) -->
+    <!-- 手機版除錯控制台 (確認穩定後可加上註解隱藏) -->
     <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
     <script>eruda.init();</script>
 
     <style>
-        body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background-color: #f3f4f6; overflow-x: hidden; }
+        body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background-color: #f3f4f6; }
         
-        /* 放大站點節點 */
-        .stop-node {
-            position: absolute;
-            width: 18px;
-            height: 18px;
-            background-color: white;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 10;
+        .route-axis {
+            position: relative;
+            margin-left: 1.25rem;
+            margin-top: 1.25rem;
+            margin-bottom: 2.5rem;
+            border-left-width: 5px;
+            border-left-style: solid;
         }
 
-        /* 放大文字標籤容器 */
+        .axis-out-1 { border-color: #3b82f6; }
+        .axis-in-1 { border-color: #93c5fd; }
+        .axis-out-2 { border-color: #10b981; }
+        .axis-in-2 { border-color: #6ee7b7; }
+        .axis-out-3 { border-color: #f59e0b; }
+        .axis-in-3 { border-color: #fcd34d; }
+
+        /* 政大3路 達賢分支虛線軌道 */
+        .branch-track-3 {
+            position: absolute;
+            left: -5px;
+            width: 28px;
+            border-top: 3px dashed #f59e0b;
+            border-right: 4px dashed #f59e0b;
+            border-bottom: 3px dashed #f59e0b;
+            border-top-right-radius: 10px;
+            border-bottom-right-radius: 10px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* 放大站點圓圈 */
+        .stop-node {
+            position: absolute;
+            left: -12.5px;
+            width: 20px;
+            height: 20px;
+            background-color: white;
+            border-radius: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+        }
+        
+        .node-out-1 { border: 5px solid #3b82f6; }
+        .node-in-1 { border: 5px solid #60a5fa; }
+        .node-out-2 { border: 5px solid #10b981; }
+        .node-in-2 { border: 5px solid #34d399; }
+        .node-out-3 { border: 5px solid #f59e0b; }
+        .node-in-3 { border: 5px solid #fbbf24; }
+        .node-branch-3 { border: 4px solid #d97706; background-color: #fffbeb; }
+
+        /* 放大文字資訊框 */
         .stop-info {
             position: absolute;
+            left: 16px;
+            transform: translateY(-50%);
             width: max-content;
             display: flex;
             flex-direction: column;
-            line-height: 1.2;
-            background-color: rgba(255,255,255,0.85);
-            padding: 2px 6px;
+            line-height: 1.25;
+            background-color: rgba(255,255,255,0.9);
+            padding: 3px 6px;
             border-radius: 6px;
             z-index: 5;
         }
 
-        /* 放大實體公車圖示 */
+        /* 放大公車圖示 */
         .bus-marker {
             position: absolute;
+            left: -18.5px;
             width: 32px;
             height: 32px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
-            font-size: 14px;
+            font-weight: 800;
+            font-size: 0.95rem;
             z-index: 20;
-            border: 2px solid white;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+            border: 2.5px solid white;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.25);
             transition: top 0.5s ease-in-out, left 0.5s ease-in-out;
-            transform: translate(-50%, -50%);
+            transform: translateY(-50%);
         }
 
-        .bus-blue { background-color: #2563eb; color: white; }
-        .bus-green { background-color: #059669; color: white; }
-        .bus-yellow { background-color: #d97706; color: white; }
+        .bus-out-1 { background-color: #2563eb; color: white; }
+        .bus-out-2 { background-color: #059669; color: white; }
+        .bus-out-3 { background-color: #d97706; color: white; }
+        .bus-in-1 { background-color: #bfdbfe; color: #1e3a8a; }
+        .bus-in-2 { background-color: #a7f3d0; color: #064e3b; }
+        .bus-in-3 { background-color: #fde68a; color: #78350f; }
 
         .loading-spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -65,17 +110,17 @@
 </head>
 <body class="pb-12">
 
-    <div class="max-w-lg mx-auto bg-white min-h-screen shadow-md">
+    <div class="max-w-md mx-auto bg-white min-h-screen shadow-md">
         <div class="sticky top-0 bg-white/95 backdrop-blur-sm p-4 border-b border-gray-200 z-50 flex justify-between items-center shadow-sm">
             <h1 class="font-bold text-gray-800 text-xl flex items-center gap-2">
-                🚌 校園公車環山動態
+                🚌 校園公車即時動態
             </h1>
             <div class="flex items-center gap-2">
                 <span id="sync-icon" class="text-gray-400 text-sm">🔄</span>
-                <div id="clock" class="font-mono text-gray-600 bg-gray-100 px-3 py-1 rounded text-base">--:--:--</div>
+                <div id="clock" class="font-mono text-gray-700 bg-gray-100 px-2.5 py-1 rounded text-base font-semibold">--:--:--</div>
             </div>
         </div>
-        <div class="p-4 space-y-10" id="routes-container"></div>
+        <div class="p-3.5 space-y-6" id="routes-container"></div>
     </div>
 
     <script>
@@ -89,76 +134,49 @@
         updateClock();
         setInterval(updateClock, 1000);
 
-        // 🌟 真實圓環座標系統 (支援 Y 字分支) 🌟
-        const layoutConfig = {
+        const routeConfig = {
             1: {
-                name: "政大1路", rid: 16446,
-                colorTheme: "blue", hexColor: "#3b82f6",
-                svgWidth: 400, svgHeight: 440,
-                paths: [
-                    `<ellipse cx="200" cy="220" rx="120" ry="160" stroke="#3b82f6" stroke-width="8" fill="none" />`
-                ],
-                stops: [
-                    { id: "tte127374", name: "行政大樓(去)", x: 179, y: 64, align: "top" },
-                    { id: "tte129747", name: "百年樓", x: 116, y: 108, align: "left" },
-                    { id: "tte129748", name: "藝文中心", x: 80, y: 220, align: "left" },
-                    { id: "tte127375", name: "好漢坡", x: 116, y: 332, align: "left" },
-                    { id: "tte127373", name: "好漢坡", x: 284, y: 332, align: "right" },
-                    { id: "tte181244", name: "藝文中心", x: 320, y: 220, align: "right" },
-                    { id: "tte181245", name: "百年樓", x: 284, y: 108, align: "right" },
-                    { id: "tte181246", name: "行政大樓(返)", x: 221, y: 64, align: "top" }
-                ]
+                name: "政大1路", height: "240px", color: 1, rid: 16446,
+                outbound: { dest: "往好漢坡", stops: [ 
+                    { name: "行政大樓", id: "tte127374" }, { name: "百年樓", id: "tte129747" }, 
+                    { name: "藝文中心", id: "tte129748" }, { name: "好漢坡", id: "tte127375" } ] },
+                inbound: { dest: "往行政大樓", stops: [ 
+                    { name: "好漢坡", id: "tte127373" }, { name: "藝文中心", id: "tte181244" }, 
+                    { name: "百年樓", id: "tte181245" }, { name: "行政大樓", id: "tte181246" } ] }
             },
             2: {
-                name: "政大2路", rid: 16447,
-                colorTheme: "green", hexColor: "#10b981",
-                svgWidth: 400, svgHeight: 620,
-                paths: [
-                    `<ellipse cx="200" cy="310" rx="120" ry="240" stroke="#10b981" stroke-width="8" fill="none" />`
-                ],
-                stops: [
-                    { id: "tte129749", name: "行政大樓(去)", x: 190, y: 72, align: "top" },
-                    { id: "tte129750", name: "百年樓", x: 131, y: 115, align: "left" },
-                    { id: "tte127378", name: "藝文中心", x: 92, y: 209, align: "left" },
-                    { id: "tte127376", name: "好漢坡", x: 81, y: 329, align: "left" },
-                    { id: "tte215373", name: "自強一二三", x: 102, y: 446, align: "left" },
-                    { id: "tte181248", name: "山居學習", x: 149, y: 526, align: "bottom" },
-                    { id: "tte205983", name: "自強十舍", x: 209, y: 547, align: "bottom" },
-                    { id: "tte205507", name: "研創中心", x: 268, y: 504, align: "right" },
-                    { id: "tte205506", name: "六期運動場", x: 308, y: 410, align: "right" },
-                    { id: "tte205508", name: "研創中心(返)", x: 318, y: 290, align: "right" },
-                    { id: "tte181249", name: "好漢坡", x: 297, y: 173, align: "right" },
-                    { id: "tte181250", name: "藝文中心", x: 250, y: 94, align: "right" },
-                    { id: "tte181251", name: "百年樓", x: 230, y: 79, align: "top" },
-                    { id: "tte181252", name: "行政大樓(返)", x: 209, y: 72, align: "top" }
-                ]
+                name: "政大2路", height: "540px", color: 2, rid: 16447,
+                outbound: { dest: "往六期運動場", stops: [ 
+                    { name: "行政大樓", id: "tte129749" }, { name: "百年樓", id: "tte129750" }, 
+                    { name: "藝文中心", id: "tte127378" }, { name: "好漢坡", id: "tte127376" }, 
+                    { name: "自強一二三舍", id: "tte215373" }, { name: "山居學習中心", id: "tte181248" }, 
+                    { name: "自強十舍", id: "tte205983" }, { name: "研創中心", id: "tte205507" }, 
+                    { name: "六期運動場", id: "tte205506" } ] },
+                inbound: { dest: "往行政大樓", stops: [ 
+                    { name: "研創中心", id: "tte205508" }, { name: "好漢坡", id: "tte181249" }, 
+                    { name: "藝文中心", id: "tte181250" }, { name: "百年樓", id: "tte181251" }, 
+                    { name: "行政大樓", id: "tte181252" } ] }
             },
             3: {
-                name: "政大3路", rid: 16448,
-                colorTheme: "yellow", hexColor: "#f59e0b",
-                svgWidth: 480, svgHeight: 560,
-                paths: [
-                    // 實體圓環 (主線)
-                    `<ellipse cx="200" cy="280" rx="120" ry="240" stroke="#f59e0b" stroke-width="8" fill="none" />`,
-                    // 虛線分支 (達賢圖書館專線) - 從百年樓分岔，繞經達賢，最後接回行政大樓
-                    `<path d="M 315 220 C 420 220, 420 180, 420 160 L 420 80 C 420 44, 280 44, 220 44" stroke="#f59e0b" stroke-width="8" fill="none" stroke-dasharray="10 10" stroke-linecap="round" />`
-                ],
-                stops: [
-                    { id: "tte127380", name: "行政大樓(去)", x: 179, y: 44, align: "top" },
-                    { id: "tte129751", name: "百年樓", x: 116, y: 112, align: "left" },
-                    { id: "tte205512", name: "藝文中心", x: 82, y: 239, align: "left" },
-                    { id: "tte127381", name: "好漢坡", x: 92, y: 380, align: "left" },
-                    { id: "tte215374", name: "自強一二三", x: 140, y: 486, align: "left" },
-                    { id: "tte194576", name: "山居學習", x: 220, y: 515, align: "bottom" },
-                    { id: "tte181259", name: "好漢坡", x: 284, y: 448, align: "right" },
-                    { id: "tte205513", name: "藝文中心", x: 315, y: 340, align: "right" },
-                    { id: "tte181261", name: "百年樓(分岔)", x: 315, y: 220, align: "right" },
-                    // 支線站點
-                    { id: "tte204875", name: "風雩樓", x: 420, y: 160, align: "right" },
-                    { id: "tte205534", name: "達賢圖書館", x: 420, y: 80, align: "right" },
-                    // 終點
-                    { id: "tte205535", name: "行政大樓(返)", x: 220, y: 44, align: "top" }
-                ]
+                name: "政大3路", height: "420px", color: 3, rid: 16448,
+                outbound: { dest: "往山居學習中心", stops: [ 
+                    { name: "行政大樓", id: "tte127380" }, { name: "百年樓", id: "tte129751" }, 
+                    { name: "藝文中心", id: "tte205512" }, { name: "好漢坡", id: "tte127381" }, 
+                    { name: "自強一二三舍", id: "tte215374" }, { name: "山居學習中心", id: "tte194576" } ] },
+                inbound: { 
+                    dest: "往行政大樓 (虛線為達賢分支)", 
+                    hasBranch: true,
+                    branchStart: 42, // 從百年樓 (42%) 分出
+                    branchEnd: 100,  // 接回行政大樓 (100%)
+                    stops: [ 
+                        { name: "好漢坡", id: "tte181259", pos: 0 }, 
+                        { name: "藝文中心", id: "tte205513", pos: 21 }, 
+                        { name: "百年樓", id: "tte181261", pos: 42 }, 
+                        { name: "風雩樓", id: "tte204875", pos: 64, isBranch: true }, 
+                        { name: "達賢圖書館", id: "tte205534", pos: 82, isBranch: true }, 
+                        { name: "行政大樓", id: "tte205535", pos: 100 } 
+                    ] 
+                }
             }
         };
 
@@ -167,56 +185,62 @@
             let html = "";
 
             [1, 2, 3].forEach(routeId => {
-                const config = layoutConfig[routeId];
-                const aspectRatio = (config.svgHeight / config.svgWidth) * 100;
+                const config = routeConfig[routeId];
+                const generateDirectionHtml = (dirType, dirConfig, isOutbound) => {
+                    const axisClass = `axis-${isOutbound ? 'out' : 'in'}-${config.color}`;
+                    const baseNodeClass = `node-${isOutbound ? 'out' : 'in'}-${config.color}`;
+                    const titleColor = isOutbound ? 'text-gray-800' : 'text-gray-600';
 
-                let stopsHtml = config.stops.map(stop => {
-                    const pctX = (stop.x / config.svgWidth) * 100;
-                    const pctY = (stop.y / config.svgHeight) * 100;
-                    
-                    let alignCss = "";
-                    const offset = "18px"; // 加大文字與圓點的距離
-                    
-                    if (stop.align === 'right') {
-                        alignCss = `left: calc(${pctX}% + ${offset}); top: ${pctY}%; transform: translateY(-50%); align-items: flex-start; text-align: left;`;
-                    } else if (stop.align === 'left') {
-                        alignCss = `right: calc(${100 - pctX}% + ${offset}); top: ${pctY}%; transform: translateY(-50%); align-items: flex-end; text-align: right;`;
-                    } else if (stop.align === 'top') {
-                        alignCss = `bottom: calc(${100 - pctY}% + ${offset}); left: ${pctX}%; transform: translateX(-50%); align-items: center; text-align: center;`;
-                    } else if (stop.align === 'bottom') {
-                        alignCss = `top: calc(${pctY}% + ${offset}); left: ${pctX}%; transform: translateX(-50%); align-items: center; text-align: center;`;
+                    // 若為 3 路返程，繪製右側虛線分支軌道
+                    let branchTrackHtml = "";
+                    if (dirConfig.hasBranch) {
+                        const topPct = dirConfig.branchStart;
+                        const heightPct = dirConfig.branchEnd - dirConfig.branchStart;
+                        branchTrackHtml = `<div class="branch-track-3" style="top: ${topPct}%; height: ${heightPct}%;"></div>`;
                     }
 
+                    let stopsHtml = dirConfig.stops.map((stop, index) => {
+                        const percent = stop.pos !== undefined ? stop.pos : (index / (dirConfig.stops.length - 1)) * 100;
+                        const isBranch = stop.isBranch === true;
+                        
+                        // 分支站點往右偏移 26px，對齊虛線軌道
+                        const nodeLeftStyle = isBranch ? 'left: 13.5px;' : '';
+                        const infoLeftStyle = isBranch ? 'left: 42px;' : '';
+                        const nodeClass = isBranch ? 'node-branch-3' : baseNodeClass;
+                        const badgeHtml = isBranch ? `<span class="text-[10px] bg-amber-100 text-amber-800 px-1 rounded font-normal ml-1">支線</span>` : '';
+
+                        return `
+                            <div class="stop-node ${nodeClass}" style="top: ${percent}%; ${nodeLeftStyle}"></div>
+                            <div class="stop-info" style="top: ${percent}%; ${infoLeftStyle}">
+                                <span class="font-bold text-gray-800 text-[15px] flex items-center">${stop.name}${badgeHtml}</span>
+                                <span class="text-xs text-gray-400 mt-0.5 font-bold transition-colors duration-300" id="status-${stop.id}">連線中...</span>
+                                <span class="text-[11px] text-blue-600 font-mono font-semibold hidden mt-0.5" id="plate-${stop.id}"></span>
+                            </div>
+                        `;
+                    }).join("");
+
                     return `
-                        <div class="stop-node border-[4px]" style="left: ${pctX}%; top: ${pctY}%; border-color: ${config.hexColor};"></div>
-                        <div class="stop-info" style="${alignCss}">
-                            <span class="font-bold text-gray-800 text-[14px] mb-[2px]">${stop.name}</span>
-                            <span class="text-[12px] text-gray-400 font-bold transition-colors duration-300" id="status-${stop.id}">無資料</span>
-                            <span class="text-[11px] text-blue-600 font-mono hidden mt-[1px]" id="plate-${stop.id}"></span>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-bold ${titleColor} mb-2 flex flex-col">
+                                <span>${isOutbound ? '去程' : '返程'}</span>
+                                <span class="text-xs font-normal text-gray-400 truncate">${dirConfig.dest}</span>
+                            </div>
+                            <div class="route-axis ${axisClass}" style="height: ${config.height};" id="axis-${routeId}-${dirType}">
+                                ${branchTrackHtml}
+                                ${stopsHtml}
+                            </div>
                         </div>
                     `;
-                }).join("");
-
-                let legendHtml = "";
-                if (routeId === 3) {
-                    legendHtml = `<div class="text-[13px] font-bold text-orange-500 absolute top-0 right-4 z-20">※ 虛線為達賢分支</div>`;
-                }
+                };
 
                 html += `
-                    <div class="bg-white rounded-2xl p-5 border border-gray-200 shadow-md mb-6">
-                        <div class="font-extrabold text-2xl text-gray-900 mb-6 border-b border-gray-100 pb-3">
+                    <div class="bg-white rounded-2xl p-4 border border-gray-200 shadow-sm mb-4">
+                        <div class="font-extrabold text-xl text-gray-800 mb-4 border-b border-gray-100 pb-2.5">
                             ${config.name}
                         </div>
-                        <div class="relative w-full mx-auto" style="max-width: ${config.svgWidth}px;">
-                            ${legendHtml}
-                            <div class="relative w-full" style="padding-bottom: ${aspectRatio}%;">
-                                <svg viewBox="0 0 ${config.svgWidth} ${config.svgHeight}" class="absolute inset-0 w-full h-full z-0 overflow-visible">
-                                    ${config.paths.join('')}
-                                </svg>
-                                <div class="absolute inset-0 z-10" id="route-map-${routeId}">
-                                    ${stopsHtml}
-                                </div>
-                            </div>
+                        <div class="flex gap-3 w-full">
+                            ${generateDirectionHtml('out', config.outbound, true)}
+                            ${generateDirectionHtml('in', config.inbound, false)}
                         </div>
                     </div>
                 `;
@@ -241,7 +265,7 @@
                     }
                 }
             } catch (e) {
-                console.warn("解析異常:", e);
+                console.warn("解析節點異常:", e);
             }
             return { statusText, plateText };
         }
@@ -250,63 +274,71 @@
             const syncIcon = document.getElementById('sync-icon');
             syncIcon.classList.add('loading-spin');
 
-            // ⚠️ 確保這裡是你的 Cloudflare Worker 網址
-            const CF_WORKER_URL = "https://nccu-bus.qoo3308.workers.dev/";
+            // 已填入你的專屬 Cloudflare Worker 網址（移除尾端斜線避免雙斜線異常）
+            const CF_WORKER_URL = "https://nccu-bus.qoo3308.workers.dev";
 
             for (let routeId of [1, 2, 3]) {
-                const config = layoutConfig[routeId];
+                const config = routeConfig[routeId];
                 const targetUrl = `http://nccu.5284.com.tw/MQS/route.jsp?rid=${config.rid}`;
                 const proxyUrl = `${CF_WORKER_URL}?url=${encodeURIComponent(targetUrl)}&t=${Date.now()}`;
                 
                 try {
                     const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error(`CF代理失敗: ${response.status}`);
+                    if (!response.ok) throw new Error(`CF 代理請求失敗，代碼: ${response.status}`);
                     
                     const htmlText = await response.text(); 
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(htmlText, 'text/html');
                     
-                    document.getElementById(`route-map-${routeId}`).querySelectorAll('.bus-marker').forEach(b => b.remove());
+                    document.getElementById(`axis-${routeId}-out`).querySelectorAll('.bus-marker').forEach(b => b.remove());
+                    document.getElementById(`axis-${routeId}-in`).querySelectorAll('.bus-marker').forEach(b => b.remove());
 
-                    config.stops.forEach((stop) => {
-                        const tdElement = doc.getElementById(stop.id);
-                        if (tdElement) {
-                            const { statusText, plateText } = safeParseStatus(tdElement);
-                            const statusEl = document.getElementById(`status-${stop.id}`);
-                            
-                            statusEl.innerText = statusText;
-                            
-                            if (statusText.includes('將到站')) {
-                                statusEl.className = "text-[12px] mt-[1px] font-bold text-red-500 transition-colors duration-300";
-                            } else if (statusText.includes('分')) {
-                                statusEl.className = "text-[12px] mt-[1px] font-bold text-green-600 transition-colors duration-300";
-                            } else {
-                                statusEl.className = "text-[12px] mt-[1px] font-bold text-gray-400 transition-colors duration-300";
-                            }
+                    const processDirection = (dirConfig, dirType) => {
+                        dirConfig.stops.forEach((stop, index) => {
+                            const tdElement = doc.getElementById(stop.id);
+                            if (tdElement) {
+                                const { statusText, plateText } = safeParseStatus(tdElement);
 
-                            const plateEl = document.getElementById(`plate-${stop.id}`);
-                            if (plateText) {
-                                plateEl.innerText = plateText;
-                                plateEl.classList.remove('hidden');
-                            } else {
-                                plateEl.classList.add('hidden');
-                            }
-
-                            if (statusText.includes('將到站') || (statusText.includes('未發車') && plateText !== "")) {
-                                const pctX = (stop.x / config.svgWidth) * 100;
-                                const pctY = (stop.y / config.svgHeight) * 100;
+                                const statusEl = document.getElementById(`status-${stop.id}`);
+                                statusEl.innerText = statusText;
                                 
-                                const bus = document.createElement('div');
-                                bus.className = `bus-marker bus-${config.colorTheme}`;
-                                bus.style.left = `${pctX}%`;
-                                bus.style.top = `${pctY}%`;
-                                bus.innerText = routeId;
-                                document.getElementById(`route-map-${routeId}`).appendChild(bus);
+                                if (statusText.includes('將到站')) {
+                                    statusEl.className = "text-xs mt-0.5 font-extrabold text-red-500 transition-colors duration-300";
+                                } else if (statusText.includes('分')) {
+                                    statusEl.className = "text-xs mt-0.5 font-bold text-green-600 transition-colors duration-300";
+                                } else {
+                                    statusEl.className = "text-xs mt-0.5 font-bold text-gray-400 transition-colors duration-300";
+                                }
+
+                                const plateEl = document.getElementById(`plate-${stop.id}`);
+                                if (plateText) {
+                                    plateEl.innerText = plateText;
+                                    plateEl.classList.remove('hidden');
+                                } else {
+                                    plateEl.classList.add('hidden');
+                                }
+
+                                if (statusText.includes('將到站') || (statusText.includes('未發車') && plateText !== "")) {
+                                    const percent = stop.pos !== undefined ? stop.pos : (index / (dirConfig.stops.length - 1)) * 100;
+                                    const bus = document.createElement('div');
+                                    bus.className = `bus-marker bus-${dirType}-${config.color}`;
+                                    bus.style.top = `${percent}%`;
+                                    // 若公車位於達賢支線站點，將公車圓圈同步偏移至虛線軌道上
+                                    if (stop.isBranch) {
+                                        bus.style.left = '7.5px';
+                                    }
+                                    bus.innerText = routeId;
+                                    document.getElementById(`axis-${routeId}-${dirType}`).appendChild(bus);
+                                }
                             }
-                        }
-                    });
+                        });
+                    };
+
+                    processDirection(config.outbound, 'out');
+                    processDirection(config.inbound, 'in');
+
                 } catch (error) {
-                    console.error(`路線 ${routeId} 失敗:`, error);
+                    console.error(`路線 ${routeId} 同步失敗:`, error);
                 }
             }
             syncIcon.classList.remove('loading-spin');
