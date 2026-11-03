@@ -13,41 +13,44 @@
     <style>
         body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background-color: #f3f4f6; overflow-x: hidden; }
         
+        /* 放大站點節點 */
         .stop-node {
             position: absolute;
-            width: 14px;
-            height: 14px;
+            width: 18px;
+            height: 18px;
             background-color: white;
             border-radius: 50%;
             transform: translate(-50%, -50%);
             z-index: 10;
         }
 
+        /* 放大文字標籤容器 */
         .stop-info {
             position: absolute;
             width: max-content;
             display: flex;
             flex-direction: column;
-            line-height: 1.1;
+            line-height: 1.2;
             background-color: rgba(255,255,255,0.85);
-            padding: 2px 4px;
-            border-radius: 4px;
+            padding: 2px 6px;
+            border-radius: 6px;
             z-index: 5;
         }
 
+        /* 放大實體公車圖示 */
         .bus-marker {
             position: absolute;
-            width: 24px;
-            height: 24px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 0.8rem;
+            font-size: 14px;
             z-index: 20;
             border: 2px solid white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
             transition: top 0.5s ease-in-out, left 0.5s ease-in-out;
             transform: translate(-50%, -50%);
         }
@@ -60,19 +63,19 @@
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="pb-10">
+<body class="pb-12">
 
-    <div class="max-w-md mx-auto bg-white min-h-screen shadow-md">
+    <div class="max-w-lg mx-auto bg-white min-h-screen shadow-md">
         <div class="sticky top-0 bg-white/95 backdrop-blur-sm p-4 border-b border-gray-200 z-50 flex justify-between items-center shadow-sm">
-            <h1 class="font-bold text-gray-800 text-lg flex items-center gap-2">
+            <h1 class="font-bold text-gray-800 text-xl flex items-center gap-2">
                 🚌 校園公車環山動態
             </h1>
             <div class="flex items-center gap-2">
-                <span id="sync-icon" class="text-gray-400 text-xs">🔄</span>
-                <div id="clock" class="font-mono text-gray-600 bg-gray-100 px-2 py-1 rounded text-sm">--:--:--</div>
+                <span id="sync-icon" class="text-gray-400 text-sm">🔄</span>
+                <div id="clock" class="font-mono text-gray-600 bg-gray-100 px-3 py-1 rounded text-base">--:--:--</div>
             </div>
         </div>
-        <div class="p-4 space-y-8" id="routes-container"></div>
+        <div class="p-4 space-y-10" id="routes-container"></div>
     </div>
 
     <script>
@@ -86,74 +89,75 @@
         updateClock();
         setInterval(updateClock, 1000);
 
-        // 🌟 全新升級：2D SVG 座標系統配置 🌟
-        // x, y 為比例座標，align 決定文字標籤要放在站點的哪一側
+        // 🌟 真實圓環座標系統 (支援 Y 字分支) 🌟
         const layoutConfig = {
             1: {
                 name: "政大1路", rid: 16446,
                 colorTheme: "blue", hexColor: "#3b82f6",
-                svgWidth: 320, svgHeight: 320,
+                svgWidth: 400, svgHeight: 440,
                 paths: [
-                    `<path d="M 150 280 L 50 280 L 50 100 Q 50 20 150 20 Q 250 20 250 100 L 250 280 Z" stroke="#3b82f6" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round" />`
+                    `<ellipse cx="200" cy="220" rx="120" ry="160" stroke="#3b82f6" stroke-width="8" fill="none" />`
                 ],
                 stops: [
-                    { id: "tte127374", name: "行政大樓(去)", x: 100, y: 280, align: "top" },
-                    { id: "tte129747", name: "百年樓", x: 50, y: 200, align: "right" },
-                    { id: "tte129748", name: "藝文中心", x: 50, y: 110, align: "right" },
-                    { id: "tte127375", name: "好漢坡", x: 75, y: 45, align: "bottom" },
-                    { id: "tte127373", name: "好漢坡", x: 225, y: 45, align: "bottom" },
-                    { id: "tte181244", name: "藝文中心", x: 250, y: 110, align: "left" },
-                    { id: "tte181245", name: "百年樓", x: 250, y: 200, align: "left" },
-                    { id: "tte181246", name: "行政大樓(返)", x: 200, y: 280, align: "top" }
+                    { id: "tte127374", name: "行政大樓(去)", x: 179, y: 64, align: "top" },
+                    { id: "tte129747", name: "百年樓", x: 116, y: 108, align: "left" },
+                    { id: "tte129748", name: "藝文中心", x: 80, y: 220, align: "left" },
+                    { id: "tte127375", name: "好漢坡", x: 116, y: 332, align: "left" },
+                    { id: "tte127373", name: "好漢坡", x: 284, y: 332, align: "right" },
+                    { id: "tte181244", name: "藝文中心", x: 320, y: 220, align: "right" },
+                    { id: "tte181245", name: "百年樓", x: 284, y: 108, align: "right" },
+                    { id: "tte181246", name: "行政大樓(返)", x: 221, y: 64, align: "top" }
                 ]
             },
             2: {
                 name: "政大2路", rid: 16447,
                 colorTheme: "green", hexColor: "#10b981",
-                svgWidth: 320, svgHeight: 500,
+                svgWidth: 400, svgHeight: 620,
                 paths: [
-                    `<path d="M 150 460 L 50 460 L 50 100 Q 50 20 150 20 Q 250 20 250 100 L 250 460 Z" stroke="#10b981" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round" />`
+                    `<ellipse cx="200" cy="310" rx="120" ry="240" stroke="#10b981" stroke-width="8" fill="none" />`
                 ],
                 stops: [
-                    { id: "tte129749", name: "行政大樓(去)", x: 100, y: 460, align: "top" },
-                    { id: "tte129750", name: "百年樓", x: 50, y: 380, align: "right" },
-                    { id: "tte127378", name: "藝文中心", x: 50, y: 300, align: "right" },
-                    { id: "tte127376", name: "好漢坡", x: 50, y: 220, align: "right" },
-                    { id: "tte215373", name: "自強一二三", x: 50, y: 140, align: "right" },
-                    { id: "tte181248", name: "山居學習", x: 75, y: 45, align: "bottom" },
-                    { id: "tte205983", name: "自強十舍", x: 150, y: 20, align: "bottom" },
-                    { id: "tte205507", name: "研創中心", x: 225, y: 45, align: "bottom" },
-                    { id: "tte205506", name: "六期運動場", x: 250, y: 110, align: "left" },
-                    { id: "tte205508", name: "研創中心", x: 250, y: 190, align: "left" },
-                    { id: "tte181249", name: "好漢坡", x: 250, y: 270, align: "left" },
-                    { id: "tte181250", name: "藝文中心", x: 250, y: 350, align: "left" },
-                    { id: "tte181251", name: "百年樓", x: 250, y: 430, align: "left" },
-                    { id: "tte181252", name: "行政大樓(返)", x: 200, y: 460, align: "top" }
+                    { id: "tte129749", name: "行政大樓(去)", x: 190, y: 72, align: "top" },
+                    { id: "tte129750", name: "百年樓", x: 131, y: 115, align: "left" },
+                    { id: "tte127378", name: "藝文中心", x: 92, y: 209, align: "left" },
+                    { id: "tte127376", name: "好漢坡", x: 81, y: 329, align: "left" },
+                    { id: "tte215373", name: "自強一二三", x: 102, y: 446, align: "left" },
+                    { id: "tte181248", name: "山居學習", x: 149, y: 526, align: "bottom" },
+                    { id: "tte205983", name: "自強十舍", x: 209, y: 547, align: "bottom" },
+                    { id: "tte205507", name: "研創中心", x: 268, y: 504, align: "right" },
+                    { id: "tte205506", name: "六期運動場", x: 308, y: 410, align: "right" },
+                    { id: "tte205508", name: "研創中心(返)", x: 318, y: 290, align: "right" },
+                    { id: "tte181249", name: "好漢坡", x: 297, y: 173, align: "right" },
+                    { id: "tte181250", name: "藝文中心", x: 250, y: 94, align: "right" },
+                    { id: "tte181251", name: "百年樓", x: 230, y: 79, align: "top" },
+                    { id: "tte181252", name: "行政大樓(返)", x: 209, y: 72, align: "top" }
                 ]
             },
             3: {
                 name: "政大3路", rid: 16448,
                 colorTheme: "yellow", hexColor: "#f59e0b",
-                svgWidth: 400, svgHeight: 420, // 為了容納右側分支，把畫布加寬
+                svgWidth: 480, svgHeight: 560,
                 paths: [
-                    // 主線
-                    `<path d="M 150 380 L 50 380 L 50 100 Q 50 20 150 20 Q 250 20 250 100 L 250 380 Z" stroke="#f59e0b" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round" />`,
-                    // 達賢圖書館虛線分支
-                    `<path d="M 250 190 L 310 240 L 310 320 L 200 380" stroke="#f59e0b" stroke-width="6" fill="none" stroke-dasharray="8 6" stroke-linecap="round" stroke-linejoin="round" />`
+                    // 實體圓環 (主線)
+                    `<ellipse cx="200" cy="280" rx="120" ry="240" stroke="#f59e0b" stroke-width="8" fill="none" />`,
+                    // 虛線分支 (達賢圖書館專線) - 從百年樓分岔，繞經達賢，最後接回行政大樓
+                    `<path d="M 315 220 C 420 220, 420 180, 420 160 L 420 80 C 420 44, 280 44, 220 44" stroke="#f59e0b" stroke-width="8" fill="none" stroke-dasharray="10 10" stroke-linecap="round" />`
                 ],
                 stops: [
-                    { id: "tte127380", name: "行政大樓(去)", x: 100, y: 380, align: "top" },
-                    { id: "tte129751", name: "百年樓", x: 50, y: 290, align: "right" },
-                    { id: "tte205512", name: "藝文中心", x: 50, y: 200, align: "right" },
-                    { id: "tte127381", name: "好漢坡", x: 50, y: 110, align: "right" },
-                    { id: "tte215374", name: "自強一二三", x: 100, y: 32, align: "bottom" },
-                    { id: "tte194576", name: "山居學習", x: 200, y: 32, align: "bottom" },
-                    { id: "tte181259", name: "好漢坡", x: 250, y: 110, align: "left" },
-                    { id: "tte205513", name: "藝文中心", x: 250, y: 150, align: "left" },
-                    { id: "tte181261", name: "百年樓", x: 250, y: 190, align: "left" }, // 支線分歧點
-                    { id: "tte204875", name: "風雩樓", x: 310, y: 240, align: "right" },
-                    { id: "tte205534", name: "達賢圖書館", x: 310, y: 310, align: "right" },
-                    { id: "tte205535", name: "行政大樓(返)", x: 200, y: 380, align: "top" }
+                    { id: "tte127380", name: "行政大樓(去)", x: 179, y: 44, align: "top" },
+                    { id: "tte129751", name: "百年樓", x: 116, y: 112, align: "left" },
+                    { id: "tte205512", name: "藝文中心", x: 82, y: 239, align: "left" },
+                    { id: "tte127381", name: "好漢坡", x: 92, y: 380, align: "left" },
+                    { id: "tte215374", name: "自強一二三", x: 140, y: 486, align: "left" },
+                    { id: "tte194576", name: "山居學習", x: 220, y: 515, align: "bottom" },
+                    { id: "tte181259", name: "好漢坡", x: 284, y: 448, align: "right" },
+                    { id: "tte205513", name: "藝文中心", x: 315, y: 340, align: "right" },
+                    { id: "tte181261", name: "百年樓(分岔)", x: 315, y: 220, align: "right" },
+                    // 支線站點
+                    { id: "tte204875", name: "風雩樓", x: 420, y: 160, align: "right" },
+                    { id: "tte205534", name: "達賢圖書館", x: 420, y: 80, align: "right" },
+                    // 終點
+                    { id: "tte205535", name: "行政大樓(返)", x: 220, y: 44, align: "top" }
                 ]
             }
         };
@@ -166,54 +170,49 @@
                 const config = layoutConfig[routeId];
                 const aspectRatio = (config.svgHeight / config.svgWidth) * 100;
 
-                // 產生站牌與文字標籤
                 let stopsHtml = config.stops.map(stop => {
                     const pctX = (stop.x / config.svgWidth) * 100;
                     const pctY = (stop.y / config.svgHeight) * 100;
                     
                     let alignCss = "";
+                    const offset = "18px"; // 加大文字與圓點的距離
+                    
                     if (stop.align === 'right') {
-                        alignCss = `left: calc(${pctX}% + 12px); top: ${pctY}%; transform: translateY(-50%); align-items: flex-start;`;
+                        alignCss = `left: calc(${pctX}% + ${offset}); top: ${pctY}%; transform: translateY(-50%); align-items: flex-start; text-align: left;`;
                     } else if (stop.align === 'left') {
-                        alignCss = `right: calc(${100 - pctX}% + 12px); top: ${pctY}%; transform: translateY(-50%); align-items: flex-end; text-align: right;`;
+                        alignCss = `right: calc(${100 - pctX}% + ${offset}); top: ${pctY}%; transform: translateY(-50%); align-items: flex-end; text-align: right;`;
                     } else if (stop.align === 'top') {
-                        alignCss = `bottom: calc(${100 - pctY}% + 10px); left: ${pctX}%; transform: translateX(-50%); align-items: center; text-align: center;`;
+                        alignCss = `bottom: calc(${100 - pctY}% + ${offset}); left: ${pctX}%; transform: translateX(-50%); align-items: center; text-align: center;`;
                     } else if (stop.align === 'bottom') {
-                        alignCss = `top: calc(${pctY}% + 10px); left: ${pctX}%; transform: translateX(-50%); align-items: center; text-align: center;`;
+                        alignCss = `top: calc(${pctY}% + ${offset}); left: ${pctX}%; transform: translateX(-50%); align-items: center; text-align: center;`;
                     }
 
                     return `
-                        <!-- 站點圓圈 -->
-                        <div class="stop-node border-[3px]" style="left: ${pctX}%; top: ${pctY}%; border-color: ${config.hexColor};"></div>
-                        <!-- 站牌資訊 -->
+                        <div class="stop-node border-[4px]" style="left: ${pctX}%; top: ${pctY}%; border-color: ${config.hexColor};"></div>
                         <div class="stop-info" style="${alignCss}">
-                            <span class="font-bold text-gray-700 text-[11px]">${stop.name}</span>
-                            <span class="text-[10px] text-gray-400 font-bold transition-colors duration-300" id="status-${stop.id}">無資料</span>
-                            <span class="text-[9px] text-blue-600 font-mono hidden" id="plate-${stop.id}"></span>
+                            <span class="font-bold text-gray-800 text-[14px] mb-[2px]">${stop.name}</span>
+                            <span class="text-[12px] text-gray-400 font-bold transition-colors duration-300" id="status-${stop.id}">無資料</span>
+                            <span class="text-[11px] text-blue-600 font-mono hidden mt-[1px]" id="plate-${stop.id}"></span>
                         </div>
                     `;
                 }).join("");
 
-                // 若為 3 路，加上小圖例說明
                 let legendHtml = "";
                 if (routeId === 3) {
-                    legendHtml = `<div class="text-[10px] text-gray-400 text-right w-full absolute -top-4 right-2">※ 虛線為達賢分支路線</div>`;
+                    legendHtml = `<div class="text-[13px] font-bold text-orange-500 absolute top-0 right-4 z-20">※ 虛線為達賢分支</div>`;
                 }
 
                 html += `
-                    <div class="bg-white rounded-xl p-4 border border-gray-100 shadow-sm mb-4">
-                        <div class="font-bold text-lg text-gray-800 mb-4 border-b border-gray-50 pb-2">
+                    <div class="bg-white rounded-2xl p-5 border border-gray-200 shadow-md mb-6">
+                        <div class="font-extrabold text-2xl text-gray-900 mb-6 border-b border-gray-100 pb-3">
                             ${config.name}
                         </div>
-                        <!-- 環形畫布容器 -->
                         <div class="relative w-full mx-auto" style="max-width: ${config.svgWidth}px;">
                             ${legendHtml}
                             <div class="relative w-full" style="padding-bottom: ${aspectRatio}%;">
-                                <!-- SVG 軌道 -->
-                                <svg viewBox="0 0 ${config.svgWidth} ${config.svgHeight}" class="absolute inset-0 w-full h-full z-0">
+                                <svg viewBox="0 0 ${config.svgWidth} ${config.svgHeight}" class="absolute inset-0 w-full h-full z-0 overflow-visible">
                                     ${config.paths.join('')}
                                 </svg>
-                                <!-- HTML 站牌與公車容器 -->
                                 <div class="absolute inset-0 z-10" id="route-map-${routeId}">
                                     ${stopsHtml}
                                 </div>
@@ -242,7 +241,7 @@
                     }
                 }
             } catch (e) {
-                console.warn("解析節點異常:", e);
+                console.warn("解析異常:", e);
             }
             return { statusText, plateText };
         }
@@ -251,7 +250,7 @@
             const syncIcon = document.getElementById('sync-icon');
             syncIcon.classList.add('loading-spin');
 
-            // ⚠️ 記得把這裡替換成你昨日建立的 Cloudflare Worker 網址！
+            // ⚠️ 確保這裡是你的 Cloudflare Worker 網址
             const CF_WORKER_URL = "https://nccu-bus.qoo3308.workers.dev/";
 
             for (let routeId of [1, 2, 3]) {
@@ -261,29 +260,28 @@
                 
                 try {
                     const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error(`CF 代理請求失敗，代碼: ${response.status}`);
+                    if (!response.ok) throw new Error(`CF代理失敗: ${response.status}`);
                     
                     const htmlText = await response.text(); 
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(htmlText, 'text/html');
                     
-                    // 清除舊的公車
                     document.getElementById(`route-map-${routeId}`).querySelectorAll('.bus-marker').forEach(b => b.remove());
 
                     config.stops.forEach((stop) => {
                         const tdElement = doc.getElementById(stop.id);
                         if (tdElement) {
                             const { statusText, plateText } = safeParseStatus(tdElement);
-
                             const statusEl = document.getElementById(`status-${stop.id}`);
+                            
                             statusEl.innerText = statusText;
                             
                             if (statusText.includes('將到站')) {
-                                statusEl.className = "text-[10px] mt-0.5 font-bold text-red-500 transition-colors duration-300";
+                                statusEl.className = "text-[12px] mt-[1px] font-bold text-red-500 transition-colors duration-300";
                             } else if (statusText.includes('分')) {
-                                statusEl.className = "text-[10px] mt-0.5 font-bold text-green-600 transition-colors duration-300";
+                                statusEl.className = "text-[12px] mt-[1px] font-bold text-green-600 transition-colors duration-300";
                             } else {
-                                statusEl.className = "text-[10px] mt-0.5 font-bold text-gray-400 transition-colors duration-300";
+                                statusEl.className = "text-[12px] mt-[1px] font-bold text-gray-400 transition-colors duration-300";
                             }
 
                             const plateEl = document.getElementById(`plate-${stop.id}`);
@@ -294,7 +292,6 @@
                                 plateEl.classList.add('hidden');
                             }
 
-                            // 畫出公車
                             if (statusText.includes('將到站') || (statusText.includes('未發車') && plateText !== "")) {
                                 const pctX = (stop.x / config.svgWidth) * 100;
                                 const pctY = (stop.y / config.svgHeight) * 100;
@@ -308,9 +305,8 @@
                             }
                         }
                     });
-
                 } catch (error) {
-                    console.error(`路線 ${routeId} 同步失敗:`, error);
+                    console.error(`路線 ${routeId} 失敗:`, error);
                 }
             }
             syncIcon.classList.remove('loading-spin');
