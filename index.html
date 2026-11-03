@@ -6,9 +6,9 @@
     <title>政大校園公車即時動態</title>
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- 若未來需要手機版控制台抓蟲，將下面這兩行的註解刪除即可 -->
-    <!-- <script src="https://cdn.jsdelivr.net/npm/eruda"></script> -->
-    <!-- <script>eruda.init();</script> -->
+    <!-- 已經幫你開啟手機版除錯控制台 (Eruda) -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
 
     <style>
         body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background-color: #f3f4f6; }
@@ -229,7 +229,7 @@
             const syncIcon = document.getElementById('sync-icon');
             syncIcon.classList.add('loading-spin');
 
-            // 🌟 這裡已經換成你專屬的 Google Apps Script 代理伺服器 🌟
+            // 🌟 使用你專屬的 Google Apps Script 代理伺服器 🌟
             const GAS_URL = "https://script.google.com/macros/s/AKfycbxLXAGQvNHP_oEopEVTXQq1XkuFzPiy0D7x09fJOptHvBXZmprR6Yus6_B10F6IGTMslQ/exec";
 
             for (let routeId of [1, 2, 3]) {
@@ -237,7 +237,7 @@
                 // 加上時間戳，確保每次都抓取最新狀態
                 const targetUrl = `http://nccu.5284.com.tw/MQS/route.jsp?rid=${config.rid}&t=${Date.now()}`;
                 
-                // 讓你的私人 Google 代理去抓資料
+                // 讓私人 Google 代理去抓資料
                 const proxyUrl = `${GAS_URL}?url=${encodeURIComponent(targetUrl)}`;
                 
                 try {
