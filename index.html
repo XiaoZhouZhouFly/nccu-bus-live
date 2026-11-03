@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>政大校園公車即時動態</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 內建手機除錯工具 (保留以便後續觀察) -->
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
+    
+    <!-- 若未來需要手機版控制台抓蟲，將下面這兩行的註解刪除即可 -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/eruda"></script> -->
+    <!-- <script>eruda.init();</script> -->
+
     <style>
         body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background-color: #f3f4f6; }
         
@@ -223,55 +225,35 @@
             return { statusText, plateText };
         }
 
-        // ★ 核心升級：自動容錯多重代理機制 ★
-        async function fetchHtmlWithFallback(targetUrl) {
-            const encodedUrl = encodeURIComponent(targetUrl);
-            // 準備 3 條不同的代理隧道，一條死掉就換下一條
-            const proxies = [
-                { url: `https://corsproxy.io/?${encodedUrl}`, type: 'text' },
-                { url: `https://api.codetabs.com/v1/proxy?quest=${encodedUrl}`, type: 'text' },
-                { url: `https://api.allorigins.win/get?url=${encodedUrl}`, type: 'json' }
-            ];
-
-            let lastErrorMsg = "";
-
-            for (let proxy of proxies) {
-                try {
-                    console.log("嘗試透過代理連線:", proxy.url);
-                    const response = await fetch(proxy.url);
-                    
-                    if (!response.ok) throw new Error(`伺服器回傳 ${response.status}`);
-                    
-                    if (proxy.type === 'json') {
-                        const data = await response.json();
-                        if (data.contents) return data.contents;
-                    } else {
-                        return await response.text();
-                    }
-                } catch (error) {
-                    console.warn("此隧道被阻擋或失效，切換下一條:", error.message);
-                    lastErrorMsg = error.message;
-                }
-            }
-            throw new Error(`所有連線皆被阻擋 (可能被手機防追蹤機制攔截)。最後錯誤: ${lastErrorMsg}`);
-        }
-
         async function fetchAllRoutesData() {
             const syncIcon = document.getElementById('sync-icon');
             syncIcon.classList.add('loading-spin');
 
+            // 🌟 這裡已經換成你專屬的 Google Apps Script 代理伺服器 🌟
+            const GAS_URL = "https://script.google.com/macros/s/AKfycbxLXAGQvNHP_oEopEVTXQq1XkuFzPiy0D7x09fJOptHvBXZmprR6Yus6_B10F6IGTMslQ/exec";
+
             for (let routeId of [1, 2, 3]) {
                 const config = routeConfig[routeId];
-                // 加上時間戳，防止舊資料卡在快取
+                // 加上時間戳，確保每次都抓取最新狀態
                 const targetUrl = `http://nccu.5284.com.tw/MQS/route.jsp?rid=${config.rid}&t=${Date.now()}`;
                 
+                // 讓你的私人 Google 代理去抓資料
+                const proxyUrl = `${GAS_URL}?url=${encodeURIComponent(targetUrl)}`;
+                
                 try {
-                    // 使用容錯機制抓資料
-                    const htmlText = await fetchHtmlWithFallback(targetUrl);
+                    const response = await fetch(proxyUrl);
+                    if (!response.ok) throw new Error("Google 代理請求失敗");
                     
+                    const htmlText = await response.text(); 
+                    
+                    if (htmlText.startsWith("Error:")) {
+                        throw new Error(htmlText);
+                    }
+
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(htmlText, 'text/html');
                     
+                    // 清除舊公車
                     document.getElementById(`axis-${routeId}-out`).querySelectorAll('.bus-marker').forEach(b => b.remove());
                     document.getElementById(`axis-${routeId}-in`).querySelectorAll('.bus-marker').forEach(b => b.remove());
 
@@ -284,6 +266,7 @@
                                 const statusEl = document.getElementById(`status-${stop.id}`);
                                 statusEl.innerText = statusText;
                                 
+                                // 動態變更文字顏色
                                 if (statusText.includes('將到站')) {
                                     statusEl.className = "text-[10px] mt-0.5 font-bold text-red-500 transition-colors duration-300";
                                 } else if (statusText.includes('分')) {
@@ -292,6 +275,7 @@
                                     statusEl.className = "text-[10px] mt-0.5 font-bold text-gray-400 transition-colors duration-300";
                                 }
 
+                                // 顯示車牌號碼
                                 const plateEl = document.getElementById(`plate-${stop.id}`);
                                 if (plateText) {
                                     plateEl.innerText = plateText;
@@ -300,7 +284,7 @@
                                     plateEl.classList.add('hidden');
                                 }
 
-                                // 符合條件就畫出公車
+                                // 決定是否畫出公車圖示
                                 if (statusText.includes('將到站') || (statusText.includes('未發車') && plateText !== "")) {
                                     const percent = (index / (dirConfig.stops.length - 1)) * 100;
                                     const bus = document.createElement('div');
@@ -320,13 +304,15 @@
                     console.error(`路線 ${routeId} 同步失敗:`, error);
                 }
             }
+            // 關閉讀取動畫
             syncIcon.classList.remove('loading-spin');
         }
 
+        // 啟動 UI 並執行第一次爬蟲
         initUI();
         fetchAllRoutesData();
-        // 為了避免被封鎖，每 20 秒更新一次
-        setInterval(fetchAllRoutesData, 20000);
+        // 每 15 秒更新一次
+        setInterval(fetchAllRoutesData, 15000);
     </script>
 </body>
 </html>
