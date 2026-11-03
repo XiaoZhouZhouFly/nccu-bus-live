@@ -3,8 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>政大校園公車動態系統</title>
+    <title>政大校園公車即時動態</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 內建手機除錯工具 (保留以便後續觀察) -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
     <style>
         body { font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif; background-color: #f3f4f6; }
         
@@ -84,9 +87,6 @@
         .loading-spin { animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
-<script>eruda.init();</script>
-
 </head>
 <body class="pb-10">
 
@@ -223,23 +223,51 @@
             return { statusText, plateText };
         }
 
+        // ★ 核心升級：自動容錯多重代理機制 ★
+        async function fetchHtmlWithFallback(targetUrl) {
+            const encodedUrl = encodeURIComponent(targetUrl);
+            // 準備 3 條不同的代理隧道，一條死掉就換下一條
+            const proxies = [
+                { url: `https://corsproxy.io/?${encodedUrl}`, type: 'text' },
+                { url: `https://api.codetabs.com/v1/proxy?quest=${encodedUrl}`, type: 'text' },
+                { url: `https://api.allorigins.win/get?url=${encodedUrl}`, type: 'json' }
+            ];
+
+            let lastErrorMsg = "";
+
+            for (let proxy of proxies) {
+                try {
+                    console.log("嘗試透過代理連線:", proxy.url);
+                    const response = await fetch(proxy.url);
+                    
+                    if (!response.ok) throw new Error(`伺服器回傳 ${response.status}`);
+                    
+                    if (proxy.type === 'json') {
+                        const data = await response.json();
+                        if (data.contents) return data.contents;
+                    } else {
+                        return await response.text();
+                    }
+                } catch (error) {
+                    console.warn("此隧道被阻擋或失效，切換下一條:", error.message);
+                    lastErrorMsg = error.message;
+                }
+            }
+            throw new Error(`所有連線皆被阻擋 (可能被手機防追蹤機制攔截)。最後錯誤: ${lastErrorMsg}`);
+        }
+
         async function fetchAllRoutesData() {
             const syncIcon = document.getElementById('sync-icon');
             syncIcon.classList.add('loading-spin');
 
             for (let routeId of [1, 2, 3]) {
                 const config = routeConfig[routeId];
+                // 加上時間戳，防止舊資料卡在快取
                 const targetUrl = `http://nccu.5284.com.tw/MQS/route.jsp?rid=${config.rid}&t=${Date.now()}`;
                 
-                // GitHub Pages 專用的標準 API 抓取寫法
-                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(targetUrl)}`;
-                
                 try {
-                    const response = await fetch(proxyUrl);
-                    if (!response.ok) throw new Error("網路請求失敗");
-                    
-                    const data = await response.json();
-                    const htmlText = data.contents; 
+                    // 使用容錯機制抓資料
+                    const htmlText = await fetchHtmlWithFallback(targetUrl);
                     
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(htmlText, 'text/html');
@@ -272,6 +300,7 @@
                                     plateEl.classList.add('hidden');
                                 }
 
+                                // 符合條件就畫出公車
                                 if (statusText.includes('將到站') || (statusText.includes('未發車') && plateText !== "")) {
                                     const percent = (index / (dirConfig.stops.length - 1)) * 100;
                                     const bus = document.createElement('div');
@@ -296,7 +325,8 @@
 
         initUI();
         fetchAllRoutesData();
-        setInterval(fetchAllRoutesData, 15000);
+        // 為了避免被封鎖，每 20 秒更新一次
+        setInterval(fetchAllRoutesData, 20000);
     </script>
 </body>
 </html>
